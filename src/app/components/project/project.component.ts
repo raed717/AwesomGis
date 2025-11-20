@@ -6,16 +6,17 @@ import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import { ProjectsService } from '../../services/projectService/projects.service';
+import { ShapefilesComponent } from '../shapefiles/shapefiles.component';
 import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-project',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ShapefilesComponent],
   templateUrl: './project.component.html',
   styleUrl: './project.component.css',
 })
 export class ProjectComponent implements OnInit, OnDestroy {
-  private map!: L.Map;
+  map!: L.Map;
   private normalTileLayer!: L.TileLayer;
   private satelliteTileLayer!: L.TileLayer;
   private currentLayer: 'normal' | 'satellite' = 'normal';
@@ -27,8 +28,8 @@ export class ProjectComponent implements OnInit, OnDestroy {
 
   isSidebarOpen = false;
   shapeCount = 0;
-  isImporting = false;
   showAttributesTable = false;
+  showShapefilesModal = false;
   shapeAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
   filteredAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
   private updateCountTimeout: any;
@@ -213,82 +214,38 @@ export class ProjectComponent implements OnInit, OnDestroy {
     }
   }
 
-  async onFileSelected(event: any): Promise<void> {
-    const file: File = event.target.files[0];
-
-    if (!file) {
-      return;
-    }
-
-    // Validate file type
-    if (!file.name.endsWith('.zip')) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Invalid File Type',
-        text: 'Please upload a ZIP file containing shapefile components (.shp, .dbf, .shx)',
-        confirmButtonColor: '#4CAF50',
-      });
-      event.target.value = ''; // Reset file input
-      return;
-    }
-
-    this.isImporting = true;
-
-    // Show loading
-    Swal.fire({
-      title: 'Importing Shapefile...',
-      text: 'Please wait while we process your file',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
-    try {
-      const result = await this.projectsService.importShapefile(file, this.map);
-
-      if (result.success) {
-        this.updateShapeCount();
-        // Refresh attributes if table is open
-        if (this.showAttributesTable) {
-          this.loadShapeAttributes();
-        }
-        Swal.fire({
-          icon: 'success',
-          title: 'Import Successful!',
-          text: result.message,
-          confirmButtonColor: '#4CAF50',
-        });
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Import Failed',
-          text: result.message,
-          footer:
-            '<a href="https://desktop.arcgis.com/en/arcmap/latest/manage-data/shapefiles/what-is-a-shapefile.htm" target="_blank">What is a Shapefile?</a>',
-          confirmButtonColor: '#4CAF50',
-        });
-      }
-    } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'Something went wrong while importing the shapefile!',
-        footer:
-          '<a href="https://desktop.arcgis.com/en/arcmap/latest/manage-data/shapefiles/what-is-a-shapefile.htm" target="_blank">Why do I have this issue?</a>',
-        confirmButtonColor: '#4CAF50',
-      });
-    } finally {
-      this.isImporting = false;
-      event.target.value = ''; // Reset file input
-    }
+  openShapefilesModal(): void {
+    this.showShapefilesModal = true;
   }
 
-  triggerFileInput(): void {
-    const fileInput = document.getElementById(
-      'shapefileInput'
-    ) as HTMLInputElement;
-    fileInput?.click();
+  closeShapefilesModal(): void {
+    this.showShapefilesModal = false;
+  }
+
+  onImportComplete(result: { success: boolean; message: string; count: number }): void {
+    if (result.success) {
+      this.updateShapeCount();
+      // Refresh attributes if table is open
+      if (this.showAttributesTable) {
+        this.loadShapeAttributes();
+      }
+      Swal.fire({
+        icon: 'success',
+        title: 'Import Successful!',
+        text: result.message,
+        confirmButtonColor: '#4CAF50',
+        timer: 3000,
+      });
+    } else {
+      Swal.fire({
+        icon: 'error',
+        title: 'Import Failed',
+        text: result.message,
+        footer:
+          '<a href="https://desktop.arcgis.com/en/arcmap/latest/manage-data/shapefiles/what-is-a-shapefile.htm" target="_blank">What is a Shapefile?</a>',
+        confirmButtonColor: '#4CAF50',
+      });
+    }
   }
 
   clearAllShapes(): void {

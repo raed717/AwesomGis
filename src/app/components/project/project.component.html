@@ -40,19 +40,10 @@
     <div class="control-section">
       <h4>Shape Actions</h4>
       
-      <!-- Hidden file input -->
-      <input 
-        type="file" 
-        id="shapefileInput" 
-        accept=".zip"
-        (change)="onFileSelected($event)"
-        style="display: none;">
-      
       <button 
         class="action-btn import-btn" 
-        (click)="triggerFileInput()"
-        [disabled]="isImporting">
-        📁 {{ isImporting ? 'Importing...' : 'Import Shapefile' }}
+        (click)="openShapefilesModal()">
+        📁 Import Shapefile
       </button>
       
       <button class="action-btn save-btn" (click)="saveShapes()">
@@ -232,4 +223,12 @@
       </div>
     </div>
   </div>
+
+  <!-- Shapefiles Import Modal -->
+  <app-shapefiles
+    [map]="map"
+    [isOpen]="showShapefilesModal"
+    (close)="closeShapefilesModal()"
+    (importComplete)="onImportComplete($event)">
+  </app-shapefiles>
 </div>

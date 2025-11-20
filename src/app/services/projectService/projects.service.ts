@@ -96,12 +96,13 @@ export class ProjectsService {
   async importShapefile(
     file: File,
     map: L.Map
-  ): Promise<{ success: boolean; message: string; error?: any }> {
+  ): Promise<{ success: boolean; message: string; count?: number; error?: any }> {
     try {
       // Read the file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
 
       // Parse the shapefile using shpjs
+      // When multiple shapefiles are in a zip, shpjs returns an object with shapefile names as keys
       const geojson = await shp(arrayBuffer);
 
       if (!geojson) {
@@ -112,29 +113,76 @@ export class ProjectsService {
         };
       }
 
-      // Check if geojson has features
-      const features = Array.isArray(geojson) ? geojson : [geojson];
       let featureCount = 0;
+      const shapefileNames: string[] = [];
 
-      // Process features with optimized rendering
-      features.forEach((data: any) => {
+      // Handle both single shapefile and multiple shapefiles in zip
+      // If it's an object (multiple shapefiles), keys are shapefile names
+      // If it's an array or single object, it's a single shapefile
+      let shapefileData: Array<{ name: string; data: any }> = [];
+
+      if (Array.isArray(geojson)) {
+        // Single shapefile returned as array
+        const shapefileName = this.extractShapefileName(file.name);
+        shapefileData.push({ name: shapefileName, data: geojson[0] || geojson });
+      } else if (geojson.features) {
+        // Single shapefile returned as GeoJSON object
+        const shapefileName = this.extractShapefileName(file.name);
+        shapefileData.push({ name: shapefileName, data: geojson });
+      } else {
+        // Multiple shapefiles - object with shapefile names as keys
+        Object.keys(geojson).forEach((key) => {
+          const data = (geojson as any)[key];
+          if (data && data.features) {
+            // Extract shapefile name from key (could be full path or just name)
+            // Remove directory paths, .shp extension, and clean up
+            let cleanName = key
+              .replace(/^.*[\\\/]/, '') // Remove path
+              .replace(/\.shp$/i, '') // Remove .shp extension
+              .trim();
+            
+            // If name is empty after cleaning, use a default
+            if (!cleanName) {
+              cleanName = `shapefile_${shapefileData.length + 1}`;
+            }
+            
+            shapefileData.push({ name: cleanName, data });
+            shapefileNames.push(cleanName);
+          }
+        });
+      }
+
+      if (shapefileData.length === 0) {
+        return {
+          success: false,
+          message: 'The shapefile contains no valid features or geometries.',
+        };
+      }
+
+      // Process each shapefile
+      shapefileData.forEach(({ name: shapefileName, data }) => {
         if (data && data.features && data.features.length > 0) {
           // Create GeoJSON layer group
           const geoJsonLayer = L.geoJSON(data, {
             onEachFeature: (feature, layer) => {
+              // Add or override the "name" attribute with the shapefile name
+              if (!feature.properties) {
+                feature.properties = {};
+              }
+              // Override existing "name" attribute with shapefile name
+              feature.properties.name = shapefileName;
+
               // Disable Geoman editing initially to prevent performance issues
               // User can enable editing via Edit Mode button when needed
               if ((layer as any).pm) {
                 (layer as any).pm.disable();
               }
 
-              // Add popup with feature properties
-              if (feature.properties) {
-                const props = Object.entries(feature.properties)
-                  .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
-                  .join('<br>');
-                layer.bindPopup(props || 'No properties');
-              }
+              // Add popup with feature properties (including the new name attribute)
+              const props = Object.entries(feature.properties)
+                .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+                .join('<br>');
+              layer.bindPopup(props || 'No properties');
 
               // Store layer reference
               this.drawnShapes.push(layer);
@@ -166,9 +214,20 @@ export class ProjectsService {
         map.fitBounds(group.getBounds(), { padding: [50, 50] });
       }
 
+      // Create success message
+      const shapefileCount = shapefileData.length;
+      let message = `Successfully imported ${featureCount} feature(s)`;
+      if (shapefileCount > 1) {
+        message += ` from ${shapefileCount} shapefile(s): ${shapefileNames.join(', ')}`;
+      } else {
+        message += ` from ${shapefileData[0].name}`;
+      }
+      message += '. Each feature has been assigned a "name" attribute.';
+
       return {
         success: true,
-        message: `Successfully imported ${featureCount} feature(s) from shapefile.`,
+        message,
+        count: featureCount,
       };
     } catch (error: any) {
       console.error('Error importing shapefile:', error);
@@ -193,5 +252,10 @@ export class ProjectsService {
         error: error,
       };
     }
+  }
+
+  // Extract shapefile name from filename (remove .zip extension)
+  private extractShapefileName(filename: string): string {
+    return filename.replace(/\.zip$/i, '').replace(/\.shp$/i, '');
   }
 }

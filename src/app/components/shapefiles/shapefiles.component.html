@@ -1,1 +1,115 @@
-<p>shapefiles works!</p>
+<div class="modal-overlay" [class.active]="isOpen" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>📁 Import Shapefiles</h2>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Instructions -->
+      <div class="instructions-section">
+        <h3>📋 Instructions</h3>
+        <ul>
+          <li>Upload a ZIP file containing one or more shapefiles</li>
+          <li>Each shapefile must include: <code>.shp</code>, <code>.dbf</code>, and <code>.shx</code> files</li>
+          <li>Multiple shapefiles in one ZIP are supported (e.g., building.shp, poto.shp)</li>
+          <li>Each feature will automatically get a <code>name</code> attribute based on its shapefile name</li>
+        </ul>
+      </div>
+
+      <!-- Upload Area -->
+      <div 
+        class="upload-area" 
+        [class.drag-over]="dragOver"
+        [class.has-file]="selectedFile"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)">
+        
+        <input 
+          type="file" 
+          id="shapefileInput" 
+          accept=".zip"
+          (change)="onFileSelected($event)"
+          style="display: none;"
+          [disabled]="isImporting">
+
+        <div class="upload-content" *ngIf="!selectedFile">
+          <div class="upload-icon">📦</div>
+          <h3>Drag & Drop your ZIP file here</h3>
+          <p>or</p>
+          <button class="browse-btn" (click)="triggerFileInput()" [disabled]="isImporting">
+            Browse Files
+          </button>
+          <p class="file-hint">Supported: ZIP files containing shapefiles</p>
+        </div>
+
+        <div class="file-preview" *ngIf="selectedFile">
+          <div class="file-info">
+            <div class="file-icon">📄</div>
+            <div class="file-details">
+              <h4>{{ selectedFile.name }}</h4>
+              <p>{{ formatFileSize(selectedFile.size) }}</p>
+            </div>
+            <button 
+              class="remove-file-btn" 
+              (click)="removeFile()"
+              [disabled]="isImporting"
+              title="Remove file">
+              ✕
+            </button>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="progress-section" *ngIf="isImporting || uploadStatus !== 'idle'">
+            <div class="progress-bar-container">
+              <div 
+                class="progress-bar" 
+                [style.width.%]="uploadProgress"
+                [style.background-color]="getStatusColor()">
+              </div>
+            </div>
+            <div class="progress-info">
+              <span class="progress-text" [style.color]="getStatusColor()">
+                <span class="status-icon" [class.spinning]="isSpinning()">{{ getStatusIcon() }}</span>
+                {{ uploadMessage }}
+              </span>
+              <span class="progress-percentage" *ngIf="isImporting">
+                {{ uploadProgress }}%
+              </span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons" *ngIf="!isImporting && uploadStatus === 'idle'">
+            <button class="import-btn" (click)="importShapefile()">
+              🚀 Import Shapefile
+            </button>
+            <button class="cancel-btn" (click)="removeFile()">
+              Cancel
+            </button>
+          </div>
+
+          <!-- Success/Error Message -->
+          <div class="status-message" *ngIf="uploadStatus === 'success' || uploadStatus === 'error'">
+            <div class="status-alert" [class.success]="uploadStatus === 'success'" [class.error]="uploadStatus === 'error'">
+              <span class="status-icon-large">{{ getStatusIcon() }}</span>
+              <p>{{ uploadMessage }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips Section -->
+      <div class="tips-section">
+        <h4>💡 Tips</h4>
+        <ul>
+          <li>Ensure all required files (.shp, .dbf, .shx) are in the ZIP</li>
+          <li>Shapefile names will be used as the <code>name</code> attribute for all features</li>
+          <li>If a feature already has a <code>name</code> attribute, it will be overridden</li>
+          <li>Large files may take longer to process</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
