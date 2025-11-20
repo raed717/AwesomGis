@@ -14,7 +14,7 @@
 
     <!-- Shape Counter -->
     <div class="shape-counter">
-      <strong>Drawn Shapes:</strong> {{ shapeCount }}
+      <strong>Available Shapes:</strong> {{ shapeCount }}
     </div>
 
     <!-- Layer Switcher -->
@@ -39,6 +39,22 @@
     <!-- Shape Actions -->
     <div class="control-section">
       <h4>Shape Actions</h4>
+      
+      <!-- Hidden file input -->
+      <input 
+        type="file" 
+        id="shapefileInput" 
+        accept=".zip"
+        (change)="onFileSelected($event)"
+        style="display: none;">
+      
+      <button 
+        class="action-btn import-btn" 
+        (click)="triggerFileInput()"
+        [disabled]="isImporting">
+        📁 {{ isImporting ? 'Importing...' : 'Import Shapefile' }}
+      </button>
+      
       <button class="action-btn save-btn" (click)="saveShapes()">
         💾 Save Shapes
       </button>
@@ -55,6 +71,7 @@
       <h4>Instructions</h4>
       <ul>
         <li>Use the toolbar on the left to draw shapes</li>
+        <li>Import shapefiles as ZIP files (.shp, .dbf, .shx)</li>
         <li>Click "Edit Mode" to modify existing shapes</li>
         <li>Click "Drag Mode" to move shapes</li>
         <li>Click "Remove" to delete shapes</li>

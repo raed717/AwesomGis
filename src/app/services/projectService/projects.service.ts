@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import * as L from 'leaflet';
+import shp from 'shpjs';
 
 @Injectable({
   providedIn: 'root',
@@ -76,5 +77,104 @@ export class ProjectsService {
       map.removeLayer(layer);
     });
     this.drawnShapes = [];
+  }
+
+  // Import shapefile from a zip file
+  async importShapefile(
+    file: File,
+    map: L.Map
+  ): Promise<{ success: boolean; message: string; error?: any }> {
+    try {
+      // Read the file as ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Parse the shapefile using shpjs
+      const geojson = await shp(arrayBuffer);
+
+      if (!geojson) {
+        return {
+          success: false,
+          message:
+            'Failed to parse shapefile. The file may be corrupted or invalid.',
+        };
+      }
+
+      // Check if geojson has features
+      const features = Array.isArray(geojson) ? geojson : [geojson];
+      let featureCount = 0;
+
+      features.forEach((data: any) => {
+        if (data && data.features && data.features.length > 0) {
+          // Add the GeoJSON to the map
+          L.geoJSON(data, {
+            onEachFeature: (feature, layer) => {
+              this.drawnShapes.push(layer);
+              layer.addTo(map);
+
+              // Enable Geoman editing on loaded layers
+              if ((layer as any).pm) {
+                (layer as any).pm.enable();
+              }
+
+              // Add popup with feature properties
+              if (feature.properties) {
+                const props = Object.entries(feature.properties)
+                  .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
+                  .join('<br>');
+                layer.bindPopup(props || 'No properties');
+              }
+
+              featureCount++;
+            },
+            style: () => ({
+              color: '#3388ff',
+              weight: 2,
+              opacity: 0.8,
+              fillOpacity: 0.3,
+            }),
+          });
+        }
+      });
+
+      if (featureCount === 0) {
+        return {
+          success: false,
+          message: 'The shapefile contains no valid features or geometries.',
+        };
+      }
+
+      // Fit map bounds to the imported shapes
+      if (this.drawnShapes.length > 0) {
+        const group = L.featureGroup(this.drawnShapes);
+        map.fitBounds(group.getBounds(), { padding: [50, 50] });
+      }
+
+      return {
+        success: true,
+        message: `Successfully imported ${featureCount} feature(s) from shapefile.`,
+      };
+    } catch (error: any) {
+      console.error('Error importing shapefile:', error);
+
+      // Determine specific error message
+      let errorMessage = 'Failed to import shapefile. ';
+
+      if (error.message && error.message.includes('shp')) {
+        errorMessage += 'The .shp file is missing or corrupted.';
+      } else if (error.message && error.message.includes('dbf')) {
+        errorMessage += 'The .dbf file is missing or corrupted.';
+      } else if (error.message && error.message.includes('shx')) {
+        errorMessage += 'The .shx file is missing (optional but recommended).';
+      } else {
+        errorMessage +=
+          'Please ensure your ZIP contains .shp, .dbf, and .shx files.';
+      }
+
+      return {
+        success: false,
+        message: errorMessage,
+        error: error,
+      };
+    }
   }
 }

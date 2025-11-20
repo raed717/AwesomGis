@@ -133,6 +133,19 @@
     color: white;
 }
 
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.import-btn {
+    background-color: #9C27B0;
+}
+
+.import-btn:hover:not(:disabled) {
+    background-color: #7B1FA2;
+}
+
 .save-btn {
     background-color: #2196F3;
 }

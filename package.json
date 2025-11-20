@@ -21,6 +21,7 @@
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "rxjs": "~7.8.0",
+    "shpjs": "^6.2.0",
     "sweetalert2": "^11.26.3",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
@@ -31,6 +32,7 @@
     "@angular/compiler-cli": "^19.2.0",
     "@types/jasmine": "~5.1.0",
     "@types/leaflet": "^1.9.21",
+    "@types/shpjs": "^3.4.7",
     "jasmine-core": "~5.6.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
