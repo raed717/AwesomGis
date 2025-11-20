@@ -1,0 +1,65 @@
+<div class="container">
+  <!-- Map -->
+  <div id="map"></div>
+
+  <!-- Sidebar Toggle Button -->
+  <button class="sidebar-toggle" (click)="toggleSidebar()" [class.open]="isSidebarOpen">
+    <span *ngIf="!isSidebarOpen">☰</span>
+    <span *ngIf="isSidebarOpen">✕</span>
+  </button>
+
+  <!-- Sidebar -->
+  <div class="sidebar" [class.open]="isSidebarOpen">
+    <h3>Map Controls</h3>
+
+    <!-- Shape Counter -->
+    <div class="shape-counter">
+      <strong>Drawn Shapes:</strong> {{ shapeCount }}
+    </div>
+
+    <!-- Layer Switcher -->
+    <div class="control-section">
+      <h4>Base Layer</h4>
+      <div class="layer-buttons">
+        <button 
+          class="layer-btn" 
+          [class.active]="isNormalLayer"
+          (click)="switchLayer('normal')">
+          🗺️ Normal
+        </button>
+        <button 
+          class="layer-btn" 
+          [class.active]="isSatelliteLayer"
+          (click)="switchLayer('satellite')">
+          🛰️ Satellite
+        </button>
+      </div>
+    </div>
+
+    <!-- Shape Actions -->
+    <div class="control-section">
+      <h4>Shape Actions</h4>
+      <button class="action-btn save-btn" (click)="saveShapes()">
+        💾 Save Shapes
+      </button>
+      <button class="action-btn export-btn" (click)="exportShapes()">
+        📥 Export GeoJSON
+      </button>
+      <button class="action-btn clear-btn" (click)="clearAllShapes()">
+        🗑️ Clear All
+      </button>
+    </div>
+
+    <!-- Instructions -->
+    <div class="control-section instructions">
+      <h4>Instructions</h4>
+      <ul>
+        <li>Use the toolbar on the left to draw shapes</li>
+        <li>Click "Edit Mode" to modify existing shapes</li>
+        <li>Click "Drag Mode" to move shapes</li>
+        <li>Click "Remove" to delete shapes</li>
+        <li>Export your work as GeoJSON files</li>
+      </ul>
+    </div>
+  </div>
+</div>
