@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '@geoman-io/leaflet-geoman-free';
@@ -9,7 +10,7 @@ import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-project',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './project.component.html',
   styleUrl: './project.component.css',
 })
@@ -27,6 +28,21 @@ export class ProjectComponent implements OnInit, OnDestroy {
   isSidebarOpen = false;
   shapeCount = 0;
   isImporting = false;
+  showAttributesTable = false;
+  shapeAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
+  filteredAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
+  private updateCountTimeout: any;
+
+  // Pagination properties
+  currentPage = 1;
+  itemsPerPage = 10;
+  totalPages = 1;
+  paginatedAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
+
+  // Filter properties
+  searchText = '';
+  selectedAttributeFilter: string = '';
+  attributeFilterValue = '';
 
   constructor(private projectsService: ProjectsService) {}
 
@@ -36,6 +52,11 @@ export class ProjectComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (!this.map) return;
+
+    // Clear any pending timeouts
+    if (this.updateCountTimeout) {
+      clearTimeout(this.updateCountTimeout);
+    }
 
     // 1. Remove custom listeners
     this.listeners.forEach((l) => this.map.off(l.type, l.handler));
@@ -113,15 +134,29 @@ export class ProjectComponent implements OnInit, OnDestroy {
       const layer = e.layer;
       this.projectsService.addShape(layer);
       this.updateShapeCount();
+      // Disable editing initially - user can enable via Edit Mode button
+      if ((layer as any).pm) {
+        (layer as any).pm.disable();
+      }
       if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
         layer.bindPopup('Click to edit or delete this shape');
       }
     });
 
-    this.registerListener('pm:edit', (e) => console.log('Shape edited', e));
+    this.registerListener('pm:edit', (e) => {
+      console.log('Shape edited', e);
+      // Refresh attributes if table is open
+      if (this.showAttributesTable) {
+        this.loadShapeAttributes();
+      }
+    });
     this.registerListener('pm:remove', (e) => {
       this.projectsService.removeShape(e.layer);
       this.updateShapeCount();
+      // Refresh attributes if table is open
+      if (this.showAttributesTable) {
+        this.loadShapeAttributes();
+      }
     });
 
     this.registerListener('pm:cut', (e) => console.log('Shape cut', e));
@@ -214,6 +249,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
 
       if (result.success) {
         this.updateShapeCount();
+        // Refresh attributes if table is open
+        if (this.showAttributesTable) {
+          this.loadShapeAttributes();
+        }
         Swal.fire({
           icon: 'success',
           title: 'Import Successful!',
@@ -256,11 +295,149 @@ export class ProjectComponent implements OnInit, OnDestroy {
     if (confirm('Are you sure you want to clear all shapes?')) {
       this.projectsService.clearAllShapes(this.map);
       this.updateShapeCount();
+      // Refresh attributes if table is open
+      if (this.showAttributesTable) {
+        this.loadShapeAttributes();
+      }
     }
   }
 
   private updateShapeCount(): void {
-    this.shapeCount = this.projectsService.getShapeCount();
+    // Debounce shape count updates to improve performance
+    if (this.updateCountTimeout) {
+      clearTimeout(this.updateCountTimeout);
+    }
+    this.updateCountTimeout = setTimeout(() => {
+      this.shapeCount = this.projectsService.getShapeCount();
+    }, 100);
+  }
+
+  showAttributesData(): void {
+    this.resetFilters();
+    this.loadShapeAttributes();
+    this.showAttributesTable = true;
+  }
+
+  closeAttributesTable(): void {
+    this.showAttributesTable = false;
+    this.resetFilters();
+  }
+
+  private loadShapeAttributes(): void {
+    this.shapeAttributes = this.projectsService.getAllShapesWithAttributes();
+    this.applyFilters();
+  }
+
+  getAttributeKeys(): string[] {
+    if (this.shapeAttributes.length === 0) return [];
+    const allKeys = new Set<string>();
+    this.shapeAttributes.forEach(shape => {
+      Object.keys(shape.properties).forEach(key => allKeys.add(key));
+    });
+    return Array.from(allKeys).sort();
+  }
+
+  // Filter methods
+  resetFilters(): void {
+    this.searchText = '';
+    this.selectedAttributeFilter = '';
+    this.attributeFilterValue = '';
+    this.currentPage = 1;
+  }
+
+  applyFilters(): void {
+    let filtered = [...this.shapeAttributes];
+
+    // Apply search text filter (searches across all properties)
+    if (this.searchText.trim()) {
+      const searchLower = this.searchText.toLowerCase();
+      filtered = filtered.filter(shape => {
+        // Search in all property values
+        return Object.values(shape.properties).some(value => 
+          value !== null && value !== undefined && 
+          String(value).toLowerCase().includes(searchLower)
+        ) || (shape.geometry?.type || '').toLowerCase().includes(searchLower);
+      });
+    }
+
+    // Apply attribute-specific filter
+    if (this.selectedAttributeFilter && this.attributeFilterValue.trim()) {
+      const filterValue = this.attributeFilterValue.toLowerCase();
+      filtered = filtered.filter(shape => {
+        const propValue = shape.properties[this.selectedAttributeFilter];
+        return propValue !== null && propValue !== undefined && 
+               String(propValue).toLowerCase().includes(filterValue);
+      });
+    }
+
+    this.filteredAttributes = filtered;
+    this.totalPages = Math.ceil(this.filteredAttributes.length / this.itemsPerPage) || 1;
+    this.currentPage = Math.min(this.currentPage, this.totalPages) || 1;
+    this.updatePaginatedData();
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  onAttributeFilterChange(): void {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  // Pagination methods
+  updatePaginatedData(): void {
+    const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+    const endIndex = startIndex + this.itemsPerPage;
+    this.paginatedAttributes = this.filteredAttributes.slice(startIndex, endIndex);
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages) {
+      this.currentPage = page;
+      this.updatePaginatedData();
+      // Scroll to top of table
+      const modalBody = document.querySelector('.modal-body');
+      if (modalBody) {
+        modalBody.scrollTop = 0;
+      }
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.goToPage(this.currentPage - 1);
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.goToPage(this.currentPage + 1);
+    }
+  }
+
+  getPageNumbers(): number[] {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(this.totalPages, start + maxVisible - 1);
+    
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    return pages;
+  }
+
+  getDisplayRange(): string {
+    if (this.filteredAttributes.length === 0) return '0 - 0';
+    const start = (this.currentPage - 1) * this.itemsPerPage + 1;
+    const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredAttributes.length);
+    return `${start} - ${end}`;
   }
 
   get isNormalLayer(): boolean {

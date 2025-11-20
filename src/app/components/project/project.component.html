@@ -61,6 +61,9 @@
       <button class="action-btn export-btn" (click)="exportShapes()">
         📥 Export GeoJSON
       </button>
+      <button class="action-btn attributes-btn" (click)="showAttributesData()" [disabled]="shapeCount === 0">
+        📊 View Attributes
+      </button>
       <button class="action-btn clear-btn" (click)="clearAllShapes()">
         🗑️ Clear All
       </button>
@@ -77,6 +80,156 @@
         <li>Click "Remove" to delete shapes</li>
         <li>Export your work as GeoJSON files</li>
       </ul>
+    </div>
+  </div>
+
+  <!-- Attributes Table Modal -->
+  <div class="modal-overlay" [class.active]="showAttributesTable" (click)="closeAttributesTable()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Shape Attributes</h2>
+        <button class="modal-close" (click)="closeAttributesTable()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="attributes-info" *ngIf="shapeAttributes.length === 0">
+          <p>No shapes with attributes available.</p>
+        </div>
+        <div class="table-container" *ngIf="shapeAttributes.length > 0">
+          <!-- Filters Section -->
+          <div class="filters-section">
+            <div class="filter-group">
+              <label for="searchInput" class="filter-label">🔍 Search All</label>
+              <input 
+                type="text" 
+                id="searchInput"
+                class="filter-input" 
+                placeholder="Search across all attributes..."
+                [(ngModel)]="searchText"
+                (input)="onSearchChange()">
+            </div>
+            <div class="filter-group">
+              <label for="attributeFilter" class="filter-label">🎯 Filter by Attribute</label>
+              <div class="filter-combo">
+                <select 
+                  id="attributeFilter"
+                  class="filter-select" 
+                  [(ngModel)]="selectedAttributeFilter"
+                  (change)="onAttributeFilterChange()">
+                  <option value="">Select attribute...</option>
+                  <option *ngFor="let key of getAttributeKeys()" [value]="key">{{ key }}</option>
+                </select>
+                <input 
+                  type="text" 
+                  class="filter-input filter-input-small" 
+                  placeholder="Filter value..."
+                  [(ngModel)]="attributeFilterValue"
+                  (input)="onAttributeFilterChange()"
+                  [disabled]="!selectedAttributeFilter">
+              </div>
+            </div>
+            <button class="clear-filters-btn" (click)="resetFilters(); applyFilters()" *ngIf="searchText || selectedAttributeFilter">
+              ✕ Clear Filters
+            </button>
+          </div>
+
+          <!-- Results Info -->
+          <div class="results-info">
+            <span class="results-count">
+              Showing {{ getDisplayRange() }} of {{ filteredAttributes.length }} shape(s)
+              <span *ngIf="filteredAttributes.length !== shapeAttributes.length" class="filtered-badge">
+                ({{ shapeAttributes.length }} total)
+              </span>
+            </span>
+            <div class="items-per-page-selector">
+              <label for="itemsPerPage">Items per page:</label>
+              <select 
+                id="itemsPerPage"
+                class="items-per-page-select" 
+                [(ngModel)]="itemsPerPage"
+                (change)="currentPage = 1; applyFilters()">
+                <option [value]="5">5</option>
+                <option [value]="10">10</option>
+                <option [value]="25">25</option>
+                <option [value]="50">50</option>
+                <option [value]="100">100</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Table -->
+          <div class="table-wrapper">
+            <table class="attributes-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Type</th>
+                  <th *ngFor="let key of getAttributeKeys()">{{ key }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let shape of paginatedAttributes; let i = index" class="table-row">
+                  <td class="row-number">{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+                  <td class="geometry-type">
+                    <span class="type-badge">{{ shape.geometry?.type || 'Unknown' }}</span>
+                  </td>
+                  <td *ngFor="let key of getAttributeKeys()" class="attribute-cell">
+                    {{ shape.properties[key] !== null && shape.properties[key] !== undefined ? shape.properties[key] : '-' }}
+                  </td>
+                </tr>
+                <tr *ngIf="paginatedAttributes.length === 0" class="no-results-row">
+                  <td [attr.colspan]="getAttributeKeys().length + 2" class="no-results">
+                    No results found matching your filters.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="pagination-container" *ngIf="totalPages > 1">
+            <div class="pagination-info">
+              Page {{ currentPage }} of {{ totalPages }}
+            </div>
+            <div class="pagination-controls">
+              <button 
+                class="pagination-btn" 
+                (click)="goToPage(1)"
+                [disabled]="currentPage === 1"
+                title="First page">
+                ««
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="previousPage()"
+                [disabled]="currentPage === 1"
+                title="Previous page">
+                ‹
+              </button>
+              <button 
+                *ngFor="let page of getPageNumbers()"
+                class="pagination-btn"
+                [class.active]="page === currentPage"
+                (click)="goToPage(page)">
+                {{ page }}
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="nextPage()"
+                [disabled]="currentPage === totalPages"
+                title="Next page">
+                ›
+              </button>
+              <button 
+                class="pagination-btn" 
+                (click)="goToPage(totalPages)"
+                [disabled]="currentPage === totalPages"
+                title="Last page">
+                »»
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>

@@ -10,6 +10,18 @@ export class ProjectsService {
 
   constructor() {}
 
+  // Get all shapes with their attributes
+  getAllShapesWithAttributes(): Array<{ layer: L.Layer; properties: any; geometry: any }> {
+    return this.drawnShapes.map(layer => {
+      const geoJSON = (layer as any).toGeoJSON ? (layer as any).toGeoJSON() : null;
+      return {
+        layer,
+        properties: geoJSON?.properties || {},
+        geometry: geoJSON?.geometry || null
+      };
+    });
+  }
+
   // Add a drawn shape to the collection
   addShape(layer: L.Layer): void {
     this.drawnShapes.push(layer);
@@ -58,9 +70,10 @@ export class ProjectsService {
         this.drawnShapes.push(layer);
         layer.addTo(map);
 
-        // Enable Geoman editing on loaded layers
+        // Don't enable Geoman editing automatically - let user enable it via Edit Mode button
+        // This prevents performance issues when loading many shapes
         if ((layer as any).pm) {
-          (layer as any).pm.enable();
+          (layer as any).pm.disable();
         }
       },
     });
@@ -103,17 +116,16 @@ export class ProjectsService {
       const features = Array.isArray(geojson) ? geojson : [geojson];
       let featureCount = 0;
 
+      // Process features with optimized rendering
       features.forEach((data: any) => {
         if (data && data.features && data.features.length > 0) {
-          // Add the GeoJSON to the map
-          L.geoJSON(data, {
+          // Create GeoJSON layer group
+          const geoJsonLayer = L.geoJSON(data, {
             onEachFeature: (feature, layer) => {
-              this.drawnShapes.push(layer);
-              layer.addTo(map);
-
-              // Enable Geoman editing on loaded layers
+              // Disable Geoman editing initially to prevent performance issues
+              // User can enable editing via Edit Mode button when needed
               if ((layer as any).pm) {
-                (layer as any).pm.enable();
+                (layer as any).pm.disable();
               }
 
               // Add popup with feature properties
@@ -124,6 +136,8 @@ export class ProjectsService {
                 layer.bindPopup(props || 'No properties');
               }
 
+              // Store layer reference
+              this.drawnShapes.push(layer);
               featureCount++;
             },
             style: () => ({
@@ -133,6 +147,9 @@ export class ProjectsService {
               fillOpacity: 0.3,
             }),
           });
+
+          // Add the entire layer group to map
+          geoJsonLayer.addTo(map);
         }
       });
 
