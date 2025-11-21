@@ -1,0 +1,21 @@
+.my-navbar {
+  background: linear-gradient(135deg, #142c5a 0%, #2a5298 50%, #4722ce 100%) !important;
+}
+
+.my-navbar .navbar-brand,
+.my-navbar .nav-link {
+  color: white !important;
+}
+
+.my-navbar .nav-link:hover {
+  opacity: 0.8;
+}
+
+.navbar-logos .nav-logo {
+  height: 36px;
+  width: auto;
+  margin-left: 12px;
+  filter: drop-shadow(0 0 4px rgba(0,0,0,0.3));
+  cursor: pointer;
+}
+

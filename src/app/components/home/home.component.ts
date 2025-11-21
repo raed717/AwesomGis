@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { NavbarComponent } from '../navbar/navbar.component';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule],
+  imports: [CommonModule, NavbarComponent],
   templateUrl: './home.component.html',
   styleUrl: './home.component.css',
 })
@@ -14,7 +15,7 @@ export class HomeComponent {
     bio: 'A geomatics specialist passionate about spatial technologies and geographic data analysis, with solid experience in designing FTTH plans, digital mapping, and GIS project management. With strong skills in GIS tools such as QGIS, ArcGIS Pro, and AutoCAD, I provide effective solutions to challenges related to planning, environment, and connectivity. My professional background has allowed me to collaborate with engineers and field teams, manage technical projects, and maintain a high level of accuracy in data processing.I am also comfortable working in multilingual environments (Arabic, French, English) and have strong communication skills, which support teamwork and ensure client satisfaction.',
     image:
       'https://media.licdn.com/dms/image/v2/D4E03AQHVZkBqYGGyWg/profile-displayphoto-shrink_800_800/B4EZYcwPhhHkAg-/0/1744239132942?e=1765411200&v=beta&t=_qbH6wQGmNnFvxpwanZv-Bf01XX0scUpq53P4XHy_p4',
-    email: 'rania@gismap.io',
+    email: 'Hosnirania18@gmail.com',
     linkedin: 'https://www.linkedin.com/in/hosni-rania-9886a0255/',
   };
 

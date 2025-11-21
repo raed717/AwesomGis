@@ -1,3 +1,4 @@
+<app-navbar></app-navbar>
 <div class="landing-container">
   <!-- Hero Section -->
   <section class="hero-section">
@@ -82,14 +83,15 @@
             <p class="text-muted fs-5 mb-3">{{ author.title }}</p>
             <p class="lead mb-4">{{ author.bio }}</p>
             
-            <div class="author-links">
-              <a href="mailto:{{ author.email }}" class="author-link">
-                <i class="bi bi-envelope-fill"></i> {{ author.email }}
-              </a>
-              <a href="https://{{ author.linkedin }}" class="author-link" target="_blank">
-                <i class="bi bi-github"></i> {{ author.linkedin }}
-              </a>
-            </div>
+<div class="author-links">
+  <a href="mailto:{{ author.email }}" class="author-link">
+    <i class="bi bi-envelope-fill"></i> {{ author.email }}
+  </a>
+
+  <a href="https://{{ author.linkedin }}" class="author-link" target="_blank">
+    <i class="bi bi-linkedin"></i> {{ author.linkedin }}
+  </a>
+</div>
             
             <div class="author-skills mt-4">
               <span class="skill-tag">QGIS</span>
