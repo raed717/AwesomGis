@@ -123,11 +123,11 @@ export class ProjectComponent implements OnInit, OnDestroy {
   }
 
   private initMap(): void {
-this.map = L.map('map', {
-  center: [20, 20], // Slightly above true center for better view
-  zoom: 3, // Low zoom to show most of the world
-  worldCopyJump: true, // Optional: improves panning behavior
-});
+    this.map = L.map('map', {
+      center: [20, 20], // Slightly above true center for better view
+      zoom: 3, // Low zoom to show most of the world
+      worldCopyJump: true, // Optional: improves panning behavior
+    });
 
     const defaultIcon = L.divIcon({
       html: `
@@ -661,5 +661,8 @@ this.map = L.map('map', {
 
   get isSatelliteLayer(): boolean {
     return this.currentLayer === 'satellite';
+  }
+  goToHome(): void {
+    window.location.href = '/home';
   }
 }
