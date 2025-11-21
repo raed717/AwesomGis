@@ -11,13 +11,19 @@ export class ProjectsService {
   constructor() {}
 
   // Get all shapes with their attributes
-  getAllShapesWithAttributes(): Array<{ layer: L.Layer; properties: any; geometry: any }> {
-    return this.drawnShapes.map(layer => {
-      const geoJSON = (layer as any).toGeoJSON ? (layer as any).toGeoJSON() : null;
+  getAllShapesWithAttributes(): Array<{
+    layer: L.Layer;
+    properties: any;
+    geometry: any;
+  }> {
+    return this.drawnShapes.map((layer) => {
+      const geoJSON = (layer as any).toGeoJSON
+        ? (layer as any).toGeoJSON()
+        : null;
       return {
         layer,
         properties: geoJSON?.properties || {},
-        geometry: geoJSON?.geometry || null
+        geometry: geoJSON?.geometry || null,
       };
     });
   }
@@ -96,13 +102,17 @@ export class ProjectsService {
   async importShapefile(
     file: File,
     map: L.Map
-  ): Promise<{ success: boolean; message: string; count?: number; error?: any }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    count?: number;
+    error?: any;
+  }> {
     try {
       // Read the file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
 
       // Parse the shapefile using shpjs
-      // When multiple shapefiles are in a zip, shpjs returns an object with shapefile names as keys
       const geojson = await shp(arrayBuffer);
 
       if (!geojson) {
@@ -115,37 +125,42 @@ export class ProjectsService {
 
       let featureCount = 0;
       const shapefileNames: string[] = [];
-
-      // Handle both single shapefile and multiple shapefiles in zip
-      // If it's an object (multiple shapefiles), keys are shapefile names
-      // If it's an array or single object, it's a single shapefile
       let shapefileData: Array<{ name: string; data: any }> = [];
 
+      // Handle both single shapefile and multiple shapefiles in zip
       if (Array.isArray(geojson)) {
-        // Single shapefile returned as array
-        const shapefileName = this.extractShapefileName(file.name);
-        shapefileData.push({ name: shapefileName, data: geojson[0] || geojson });
+        // Multiple shapefiles returned as array
+        // Each GeoJSON object has a 'fileName' property with the .shp name
+        geojson.forEach((data) => {
+          if (data && data.features) {
+            // Clean the fileName: remove path and extension
+            let shapefileName =
+              data.fileName || `shapefile_${shapefileData.length + 1}`;
+            shapefileName = this.cleanShapefileName(shapefileName);
+
+            shapefileData.push({ name: shapefileName, data });
+            shapefileNames.push(shapefileName);
+          }
+        });
       } else if (geojson.features) {
         // Single shapefile returned as GeoJSON object
-        const shapefileName = this.extractShapefileName(file.name);
+        let shapefileName = geojson.fileName || 'shapefile_1';
+        shapefileName = this.cleanShapefileName(shapefileName);
+
         shapefileData.push({ name: shapefileName, data: geojson });
+        shapefileNames.push(shapefileName);
       } else {
-        // Multiple shapefiles - object with shapefile names as keys
+        // Object with shapefile names as keys (alternative format)
         Object.keys(geojson).forEach((key) => {
           const data = (geojson as any)[key];
           if (data && data.features) {
-            // Extract shapefile name from key (could be full path or just name)
-            // Remove directory paths, .shp extension, and clean up
-            let cleanName = key
-              .replace(/^.*[\\\/]/, '') // Remove path
-              .replace(/\.shp$/i, '') // Remove .shp extension
-              .trim();
-            
-            // If name is empty after cleaning, use a default
+            // Extract shapefile name from key
+            let cleanName = this.cleanShapefileName(key);
+
             if (!cleanName) {
               cleanName = `shapefile_${shapefileData.length + 1}`;
             }
-            
+
             shapefileData.push({ name: cleanName, data });
             shapefileNames.push(cleanName);
           }
@@ -169,16 +184,15 @@ export class ProjectsService {
               if (!feature.properties) {
                 feature.properties = {};
               }
-              // Override existing "name" attribute with shapefile name
+              // Set the name attribute to the .shp filename
               feature.properties.name = shapefileName;
 
-              // Disable Geoman editing initially to prevent performance issues
-              // User can enable editing via Edit Mode button when needed
+              // Disable Geoman editing initially
               if ((layer as any).pm) {
                 (layer as any).pm.disable();
               }
 
-              // Add popup with feature properties (including the new name attribute)
+              // Add popup with feature properties
               const props = Object.entries(feature.properties)
                 .map(([key, value]) => `<strong>${key}:</strong> ${value}`)
                 .join('<br>');
@@ -218,7 +232,9 @@ export class ProjectsService {
       const shapefileCount = shapefileData.length;
       let message = `Successfully imported ${featureCount} feature(s)`;
       if (shapefileCount > 1) {
-        message += ` from ${shapefileCount} shapefile(s): ${shapefileNames.join(', ')}`;
+        message += ` from ${shapefileCount} shapefile(s): ${shapefileNames.join(
+          ', '
+        )}`;
       } else {
         message += ` from ${shapefileData[0].name}`;
       }
@@ -232,7 +248,6 @@ export class ProjectsService {
     } catch (error: any) {
       console.error('Error importing shapefile:', error);
 
-      // Determine specific error message
       let errorMessage = 'Failed to import shapefile. ';
 
       if (error.message && error.message.includes('shp')) {
@@ -254,8 +269,11 @@ export class ProjectsService {
     }
   }
 
-  // Extract shapefile name from filename (remove .zip extension)
-  private extractShapefileName(filename: string): string {
-    return filename.replace(/\.zip$/i, '').replace(/\.shp$/i, '');
+  // Clean shapefile name: remove path, extension, and trim
+  private cleanShapefileName(name: string): string {
+    return name
+      .replace(/^.*[\\\/]/, '') // Remove path (works for both / and \)
+      .replace(/\.shp$/i, '') // Remove .shp extension
+      .trim();
   }
 }

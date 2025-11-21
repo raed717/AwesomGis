@@ -9,6 +9,12 @@ import { ProjectsService } from '../../services/projectService/projects.service'
 import { ShapefilesComponent } from '../shapefiles/shapefiles.component';
 import Swal from 'sweetalert2';
 
+interface GroupedShapes {
+  groupName: string;
+  shapes: Array<{ layer: L.Layer; properties: any; geometry: any }>;
+  attributes: string[];
+}
+
 @Component({
   selector: 'app-project',
   imports: [CommonModule, FormsModule, ShapefilesComponent],
@@ -30,15 +36,29 @@ export class ProjectComponent implements OnInit, OnDestroy {
   shapeCount = 0;
   showAttributesTable = false;
   showShapefilesModal = false;
-  shapeAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
-  filteredAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
+  shapeAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> =
+    [];
+  filteredAttributes: Array<{
+    layer: L.Layer;
+    properties: any;
+    geometry: any;
+  }> = [];
   private updateCountTimeout: any;
+
+  // Grouped attributes
+  groupedShapes: GroupedShapes[] = [];
+  selectedGroup: string = '';
+  expandedGroups: Set<string> = new Set();
 
   // Pagination properties
   currentPage = 1;
   itemsPerPage = 10;
   totalPages = 1;
-  paginatedAttributes: Array<{ layer: L.Layer; properties: any; geometry: any }> = [];
+  paginatedAttributes: Array<{
+    layer: L.Layer;
+    properties: any;
+    geometry: any;
+  }> = [];
 
   // Filter properties
   searchText = '';
@@ -222,7 +242,11 @@ export class ProjectComponent implements OnInit, OnDestroy {
     this.showShapefilesModal = false;
   }
 
-  onImportComplete(result: { success: boolean; message: string; count: number }): void {
+  onImportComplete(result: {
+    success: boolean;
+    message: string;
+    count: number;
+  }): void {
     if (result.success) {
       this.updateShapeCount();
       // Refresh attributes if table is open
@@ -278,20 +302,99 @@ export class ProjectComponent implements OnInit, OnDestroy {
   closeAttributesTable(): void {
     this.showAttributesTable = false;
     this.resetFilters();
+    this.selectedGroup = '';
+    this.expandedGroups.clear();
   }
 
   private loadShapeAttributes(): void {
     this.shapeAttributes = this.projectsService.getAllShapesWithAttributes();
+    this.groupShapesByName();
     this.applyFilters();
   }
 
-  getAttributeKeys(): string[] {
-    if (this.shapeAttributes.length === 0) return [];
-    const allKeys = new Set<string>();
-    this.shapeAttributes.forEach(shape => {
-      Object.keys(shape.properties).forEach(key => allKeys.add(key));
+  private groupShapesByName(): void {
+    const groups = new Map<
+      string,
+      Array<{ layer: L.Layer; properties: any; geometry: any }>
+    >();
+
+    // Group shapes by their "name" attribute
+    this.shapeAttributes.forEach((shape) => {
+      const groupName = shape.properties?.name || 'Others';
+      if (!groups.has(groupName)) {
+        groups.set(groupName, []);
+      }
+      groups.get(groupName)!.push(shape);
     });
-    return Array.from(allKeys).sort();
+
+    // Convert to GroupedShapes array and collect unique attributes per group
+    this.groupedShapes = Array.from(groups.entries())
+      .map(([groupName, shapes]) => {
+        const attributesSet = new Set<string>();
+        shapes.forEach((shape) => {
+          Object.keys(shape.properties).forEach((key) => {
+            // Exclude 'name' from the attributes list since it's the group name
+            if (key !== 'name') {
+              attributesSet.add(key);
+            }
+          });
+        });
+        return {
+          groupName,
+          shapes,
+          attributes: Array.from(attributesSet).sort(),
+        };
+      })
+      .sort((a, b) => {
+        // Sort: named groups alphabetically, "Others" at the end
+        if (a.groupName === 'Others') return 1;
+        if (b.groupName === 'Others') return -1;
+        return a.groupName.localeCompare(b.groupName);
+      });
+
+    // If there's only one group, auto-select and expand it
+    if (this.groupedShapes.length === 1) {
+      this.selectedGroup = this.groupedShapes[0].groupName;
+      this.expandedGroups.add(this.selectedGroup);
+    }
+  }
+
+  getAttributeKeys(): string[] {
+    if (!this.selectedGroup) return [];
+    const group = this.groupedShapes.find(
+      (g) => g.groupName === this.selectedGroup
+    );
+    return group?.attributes || [];
+  }
+
+  toggleGroup(groupName: string): void {
+    if (this.expandedGroups.has(groupName)) {
+      this.expandedGroups.delete(groupName);
+    } else {
+      this.expandedGroups.add(groupName);
+    }
+  }
+
+  isGroupExpanded(groupName: string): boolean {
+    return this.expandedGroups.has(groupName);
+  }
+
+  selectGroup(groupName: string): void {
+    this.selectedGroup = groupName;
+    this.resetFilters();
+    this.applyFilters();
+  }
+
+  getCurrentGroupShapes(): Array<{
+    layer: L.Layer;
+    properties: any;
+    geometry: any;
+  }> {
+    if (!this.selectedGroup) return [];
+    const group = this.groupedShapes.find(
+      (g) => g.groupName === this.selectedGroup
+    );
+    return group?.shapes || [];
   }
 
   // Filter methods
@@ -303,32 +406,40 @@ export class ProjectComponent implements OnInit, OnDestroy {
   }
 
   applyFilters(): void {
-    let filtered = [...this.shapeAttributes];
+    let filtered = this.getCurrentGroupShapes();
 
     // Apply search text filter (searches across all properties)
     if (this.searchText.trim()) {
       const searchLower = this.searchText.toLowerCase();
-      filtered = filtered.filter(shape => {
+      filtered = filtered.filter((shape) => {
         // Search in all property values
-        return Object.values(shape.properties).some(value => 
-          value !== null && value !== undefined && 
-          String(value).toLowerCase().includes(searchLower)
-        ) || (shape.geometry?.type || '').toLowerCase().includes(searchLower);
+        return (
+          Object.values(shape.properties).some(
+            (value) =>
+              value !== null &&
+              value !== undefined &&
+              String(value).toLowerCase().includes(searchLower)
+          ) || (shape.geometry?.type || '').toLowerCase().includes(searchLower)
+        );
       });
     }
 
     // Apply attribute-specific filter
     if (this.selectedAttributeFilter && this.attributeFilterValue.trim()) {
       const filterValue = this.attributeFilterValue.toLowerCase();
-      filtered = filtered.filter(shape => {
+      filtered = filtered.filter((shape) => {
         const propValue = shape.properties[this.selectedAttributeFilter];
-        return propValue !== null && propValue !== undefined && 
-               String(propValue).toLowerCase().includes(filterValue);
+        return (
+          propValue !== null &&
+          propValue !== undefined &&
+          String(propValue).toLowerCase().includes(filterValue)
+        );
       });
     }
 
     this.filteredAttributes = filtered;
-    this.totalPages = Math.ceil(this.filteredAttributes.length / this.itemsPerPage) || 1;
+    this.totalPages =
+      Math.ceil(this.filteredAttributes.length / this.itemsPerPage) || 1;
     this.currentPage = Math.min(this.currentPage, this.totalPages) || 1;
     this.updatePaginatedData();
   }
@@ -347,7 +458,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
   updatePaginatedData(): void {
     const startIndex = (this.currentPage - 1) * this.itemsPerPage;
     const endIndex = startIndex + this.itemsPerPage;
-    this.paginatedAttributes = this.filteredAttributes.slice(startIndex, endIndex);
+    this.paginatedAttributes = this.filteredAttributes.slice(
+      startIndex,
+      endIndex
+    );
   }
 
   goToPage(page: number): void {
@@ -379,11 +493,11 @@ export class ProjectComponent implements OnInit, OnDestroy {
     const maxVisible = 5;
     let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(this.totalPages, start + maxVisible - 1);
-    
+
     if (end - start < maxVisible - 1) {
       start = Math.max(1, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
@@ -393,7 +507,10 @@ export class ProjectComponent implements OnInit, OnDestroy {
   getDisplayRange(): string {
     if (this.filteredAttributes.length === 0) return '0 - 0';
     const start = (this.currentPage - 1) * this.itemsPerPage + 1;
-    const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredAttributes.length);
+    const end = Math.min(
+      this.currentPage * this.itemsPerPage,
+      this.filteredAttributes.length
+    );
     return `${start} - ${end}`;
   }
 
