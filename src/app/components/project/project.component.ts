@@ -31,6 +31,17 @@ export class ProjectComponent implements OnInit, OnDestroy {
     handler: (...args: any[]) => void;
   }> = [];
 
+  // Custom colors for each shape type
+  private shapeColors = {
+    marker: '#0051ff9d', // Red-Orange
+    circle: '#0051ff9d', // Blue
+    circleMarker: '#0051ff9d', // Purple
+    polyline: '#10b9819c', // Orange
+    rectangle: '#964B00', // Green
+    polygon: '#964B00', // Red
+    default: '#a200ff9c', // Teal (fallback)
+  };
+
   isSidebarOpen = false;
   shapeCount = 0;
   showAttributesTable = false;
@@ -114,8 +125,21 @@ export class ProjectComponent implements OnInit, OnDestroy {
   private initMap(): void {
     this.map = L.map('map', {
       center: [36.8065, 10.1815],
-      zoom: 13,
+      zoom: 16,
     });
+
+    const defaultIcon = L.divIcon({
+      html: `
+    <svg width="24" height="24" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="${this.shapeColors.marker}" stroke="white" stroke-width="2"/>
+    </svg>
+    `,
+      className: '',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
+
+    (L.Marker.prototype as any).options.icon = defaultIcon;
 
     this.normalTileLayer = L.tileLayer(
       'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -133,7 +157,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
 
     this.normalTileLayer.addTo(this.map);
 
-    // Add Geoman
+    // Add Geoman with custom colors for each shape type
     // @ts-ignore
     this.map.pm.addControls({
       position: 'topleft',
@@ -150,14 +174,39 @@ export class ProjectComponent implements OnInit, OnDestroy {
       rotateMode: true,
     });
 
+    // Set global options with marker style
+    // @ts-ignore
+    this.map.pm.setGlobalOptions({
+      markerStyle: {
+        icon: this.createSvgIcon(this.shapeColors.marker),
+      },
+    });
+
+    // Set custom styles for each drawing mode
+    // @ts-ignore
+    this.map.pm.setPathOptions(
+      {
+        color: this.shapeColors.polygon,
+        fillColor: this.shapeColors.polygon,
+        fillOpacity: 0.4,
+      },
+      { merge: true }
+    );
+
     this.registerListener('pm:create', (e: any) => {
       const layer = e.layer;
+
+      // Apply custom color based on shape type
+      this.applyCustomColor(layer, e.shape);
+
       this.projectsService.addShape(layer);
       this.updateShapeCount();
+
       // Disable editing initially - user can enable via Edit Mode button
       if ((layer as any).pm) {
         (layer as any).pm.disable();
       }
+
       if (layer instanceof L.Polygon || layer instanceof L.Polyline) {
         layer.bindPopup('Click to edit or delete this shape');
       }
@@ -170,6 +219,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
         this.loadShapeAttributes();
       }
     });
+
     this.registerListener('pm:remove', (e) => {
       this.projectsService.removeShape(e.layer);
       this.updateShapeCount();
@@ -181,6 +231,94 @@ export class ProjectComponent implements OnInit, OnDestroy {
 
     this.registerListener('pm:cut', (e) => console.log('Shape cut', e));
     this.registerListener('pm:rotate', (e) => console.log('Rotate', e));
+  }
+
+  private applyCustomColor(layer: L.Layer, shapeType: string): void {
+    let color = this.shapeColors.default;
+
+    // Determine color based on shape type
+    switch (shapeType) {
+      case 'Marker':
+        color = this.shapeColors.marker;
+        // Update marker icon
+        if (layer instanceof L.Marker) {
+          layer.setIcon(this.createSvgIcon(color));
+        }
+        break;
+      case 'Circle':
+        color = this.shapeColors.circle;
+        break;
+      case 'CircleMarker':
+        color = this.shapeColors.circleMarker;
+        break;
+      case 'Line':
+        color = this.shapeColors.polyline;
+        break;
+      case 'Rectangle':
+        color = this.shapeColors.rectangle;
+        break;
+      case 'Polygon':
+        color = this.shapeColors.polygon;
+        break;
+    }
+
+    // Apply color to shapes with setStyle method
+    if ('setStyle' in layer && typeof (layer as any).setStyle === 'function') {
+      (layer as any).setStyle({
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.4,
+        weight: 3,
+      });
+    }
+  }
+
+  private getShapeType(layer: L.Layer): string {
+    if (layer instanceof L.Marker) {
+      return 'Marker';
+    } else if (layer instanceof L.Circle) {
+      return 'Circle';
+    } else if (layer instanceof L.CircleMarker) {
+      return 'CircleMarker';
+    } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+      return 'Line';
+    } else if (layer instanceof L.Rectangle) {
+      return 'Rectangle';
+    } else if (layer instanceof L.Polygon) {
+      return 'Polygon';
+    }
+    return 'Unknown';
+  }
+
+  private applyColorsToAllShapes(): void {
+    // Get all shapes from the map
+    this.map.eachLayer((layer) => {
+      // Skip tile layers
+      if (layer instanceof L.TileLayer) {
+        return;
+      }
+
+      // Determine shape type and apply color
+      const shapeType = this.getShapeType(layer);
+      if (shapeType !== 'Unknown') {
+        this.applyCustomColor(layer, shapeType);
+      }
+    });
+  }
+
+  private createSvgIcon(color = this.shapeColors.default): L.DivIcon {
+    const svg = `
+    <svg width="24" height="24" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>
+    </svg>
+  `;
+
+    return L.divIcon({
+      html: svg,
+      className: 'custom-svg-marker',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
   }
 
   private registerListener(type: string, handler: (...args: any[]) => void) {
@@ -247,6 +385,9 @@ export class ProjectComponent implements OnInit, OnDestroy {
     count: number;
   }): void {
     if (result.success) {
+      // Apply custom colors to all imported shapes
+      this.applyColorsToAllShapes();
+
       this.updateShapeCount();
       // Refresh attributes if table is open
       if (this.showAttributesTable) {
