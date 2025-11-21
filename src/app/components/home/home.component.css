@@ -48,13 +48,10 @@
 }
 
 @keyframes pulse {
-
-    0%,
-    100% {
+    0%, 100% {
         opacity: 1;
         transform: scale(1);
     }
-
     50% {
         opacity: 0.5;
         transform: scale(1.2);
@@ -103,7 +100,6 @@
         opacity: 0;
         transform: translateX(50px);
     }
-
     to {
         opacity: 1;
         transform: translateX(0);
@@ -131,12 +127,9 @@
 }
 
 @keyframes float {
-
-    0%,
-    100% {
+    0%, 100% {
         transform: translateY(0);
     }
-
     50% {
         transform: translateY(-10px);
     }
@@ -155,6 +148,77 @@
 .card-subtitle {
     font-size: 0.875rem;
     color: #64748b;
+}
+
+/* Project Section */
+.project-section {
+    background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+}
+
+.project-description-card {
+    background: linear-gradient(135deg, #ffffff, #f0f9ff);
+    border: 2px solid #bfdbfe;
+    border-radius: 20px;
+    padding: 3rem;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.project-description-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.project-icon-large {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.info-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+    border-color: #c7d2fe;
+}
+
+.info-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.info-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.75rem;
+}
+
+.info-text {
+    font-size: 0.95rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+
+.info-text:last-child {
+    margin-bottom: 0;
 }
 
 /* Author Section */
@@ -383,6 +447,10 @@
         width: 200px;
         height: 200px;
     }
+
+    .project-description-card {
+        padding: 2rem;
+    }
 }
 
 @media (max-width: 767px) {
@@ -401,5 +469,13 @@
     .floating-card {
         position: static;
         margin-top: 2rem;
+    }
+
+    .project-icon-large {
+        font-size: 3rem;
+    }
+
+    .project-description-card {
+        padding: 1.5rem;
     }
 }
