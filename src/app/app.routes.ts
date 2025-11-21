@@ -3,7 +3,7 @@ import { HomeComponent } from './components/home/home.component';
 import { ProjectComponent } from './components/project/project.component';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/home', pathMatch: 'full' },
+  { path: '', redirectTo: '/project', pathMatch: 'full' },
   { path: 'home', component: HomeComponent },
   { path: 'project', component: ProjectComponent },
 
