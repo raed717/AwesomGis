@@ -1,3 +1,173 @@
-<p>welcome to gis app</p>
+<div class="landing-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="container position-relative">
+      <div class="row align-items-center min-vh-100">
+        <div class="col-lg-6 text-white hero-content">
+          <div class="badge-custom mb-3">
+            <span class="pulse-dot"></span>
+            Web GIS Application
+          </div>
+          <h1 class="display-3 fw-bold mb-4 hero-title">
+            Shapefile Visualization Made Simple
+          </h1>
+          <p class="lead mb-4 hero-subtitle">
+            Upload, visualize, and analyze your geospatial data with our powerful 2D mapping platform. 
+            Transform complex shapefiles into interactive, beautiful maps in seconds.
+          </p>
+          <div class="d-flex gap-3 mb-5">
+            <button class="btn btn-light btn-lg px-4 shadow-lg" (click)="scrollToFeatures()">
+              Explore Features
+            </button>
+            <button class="btn btn-outline-light btn-lg px-4" (click)="goToProject()">
+              Get Started
+            </button>
+          </div>
+          
+          <!-- Stats -->
+          <div class="row text-center stats-row">
+            <div class="col-4">
+              <div class="stat-number">500K+</div>
+              <div class="stat-label">Shapefiles Processed</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-number">99.9%</div>
+              <div class="stat-label">Uptime</div>
+            </div>
+            <div class="col-4">
+              <div class="stat-number">50+</div>
+              <div class="stat-label">Countries</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-6">
+          <div class="hero-image-container">
+            <img src="https://marvel-b1-cdn.bc0a.com/f00000000100045/www.elmhurst.edu/wp-content/uploads/2020/04/gis-mapping-tools.jpg" 
+                 alt="GIS Map Visualization" 
+                 class="img-fluid hero-map-image">
+            <div class="floating-card">
+              <div class="card-icon">📍</div>
+              <div>
+                <div class="card-title">Real-time Processing</div>
+                <div class="card-subtitle">Instant shapefile rendering</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<button mat-flat-button color="primary" routerLink="/project">Go to Map</button>
+  <!-- About Author Section -->
+  <section class="author-section py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-4 text-center mb-4 mb-lg-0">
+          <div class="author-image-wrapper">
+            <img [src]="author.image" 
+                 [alt]="author.name" 
+                 class="author-image">
+            <div class="author-badge">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-lg-8">
+          <div class="author-content">
+            <span class="author-label">Meet the Owner</span>
+            <h2 class="display-5 fw-bold mb-2">{{ author.name }}</h2>
+            <p class="text-muted fs-5 mb-3">{{ author.title }}</p>
+            <p class="lead mb-4">{{ author.bio }}</p>
+            
+            <div class="author-links">
+              <a href="mailto:{{ author.email }}" class="author-link">
+                <i class="bi bi-envelope-fill"></i> {{ author.email }}
+              </a>
+              <a href="https://{{ author.linkedin }}" class="author-link" target="_blank">
+                <i class="bi bi-github"></i> {{ author.linkedin }}
+              </a>
+            </div>
+            
+            <div class="author-skills mt-4">
+              <span class="skill-tag">QGIS</span>
+              <span class="skill-tag">ArcGIS Pro</span>
+              <span class="skill-tag">ArcGIS</span>
+              <span class="skill-tag">AutoCAD</span>              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features-section py-5">
+    <div class="container">
+      <div class="text-center mb-5">
+        <span class="section-label">Platform Features</span>
+        <h2 class="display-4 fw-bold mb-3">Powerful GIS Tools at Your Fingertips</h2>
+        <p class="lead text-muted">Everything you need to work with geospatial data efficiently</p>
+      </div>
+      
+      <div class="row g-4">
+        <div class="col-md-6 col-lg-4" *ngFor="let feature of features">
+          <div class="feature-card h-100">
+            <div class="feature-icon">{{ feature.icon }}</div>
+            <h3 class="h4 mb-3">{{ feature.title }}</h3>
+            <p class="text-muted mb-0">{{ feature.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Capabilities Section -->
+  <section class="capabilities-section py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+          <img src="https://images.unsplash.com/photo-1569336415962-a4bd9f69cd83?w=800&h=600&fit=crop" 
+               alt="Map Analysis" 
+               class="img-fluid rounded-4 shadow-lg">
+        </div>
+        
+        <div class="col-lg-6">
+          <span class="section-label">Technical Capabilities</span>
+          <h2 class="display-5 fw-bold mb-4">Professional-Grade GIS Features</h2>
+          <p class="lead text-muted mb-4">
+            Built with modern web technologies to provide enterprise-level geospatial analysis capabilities.
+          </p>
+          
+          <ul class="capabilities-list">
+            <li *ngFor="let capability of capabilities">
+              <i class="bi bi-check-circle-fill text-success"></i>
+              <span>{{ capability }}</span>
+            </li>
+          </ul>
+          
+          <button class="btn btn-primary btn-lg mt-4 px-5" (click)="goToProject()">
+            Start Mapping Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section py-5">
+    <div class="container">
+      <div class="cta-card text-center">
+        <h2 class="display-4 fw-bold text-white mb-3">Ready to Transform Your Geospatial Data?</h2>
+        <p class="lead text-white-50 mb-4">
+          Join thousands of GIS professionals who trust our platform for their mapping needs.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+          <button class="btn btn-light btn-lg px-5" (click)="goToProject()">Get Started Free</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

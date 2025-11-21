@@ -42,7 +42,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
     default: '#a200ff9c', // Teal (fallback)
   };
 
-  isSidebarOpen = false;
+  isSidebarOpen = true;
   shapeCount = 0;
   showAttributesTable = false;
   showShapefilesModal = false;
@@ -123,10 +123,11 @@ export class ProjectComponent implements OnInit, OnDestroy {
   }
 
   private initMap(): void {
-    this.map = L.map('map', {
-      center: [36.8065, 10.1815],
-      zoom: 16,
-    });
+this.map = L.map('map', {
+  center: [20, 20], // Slightly above true center for better view
+  zoom: 3, // Low zoom to show most of the world
+  worldCopyJump: true, // Optional: improves panning behavior
+});
 
     const defaultIcon = L.divIcon({
       html: `
@@ -167,7 +168,7 @@ export class ProjectComponent implements OnInit, OnDestroy {
       drawPolyline: true,
       drawRectangle: true,
       drawPolygon: true,
-      editMode: true,
+      editMode: false,
       dragMode: true,
       cutPolygon: true,
       removalMode: true,
