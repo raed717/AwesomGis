@@ -61,11 +61,6 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
       description: 'Analyze critical infrastructure networks and identify fiber-optic requirements for optimal urban planning.',
     },
     {
-      icon: '🎨',
-      title: 'Custom Styling',
-      description: 'Apply custom colors, symbols, and labels to infrastructure layers for better data visualization.',
-    },
-    {
       icon: '📊',
       title: 'Attribute Analysis',
       description: 'Query and analyze attribute data from your shapefiles with advanced filtering options for infrastructure management.',
