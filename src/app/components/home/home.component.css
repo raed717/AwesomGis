@@ -479,3 +479,116 @@
         padding: 1.5rem;
     }
 }
+
+/* Add these new styles to your existing CSS */
+
+/* 3D Globe Section */
+.globe-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    padding: 6rem 0;
+    overflow: hidden;
+}
+
+.three-container {
+    width: 100%;
+    height: 500px;
+    border-radius: 20px;
+    overflow: hidden;
+    /*box-shadow: 0 20px 60px rgba(99, 102, 241, 0.2);*/
+    
+    position: relative;
+}
+
+.three-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.globe-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.globe-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.globe-stat-item:hover {
+    transform: translateX(10px);
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);
+    border-color: #c7d2fe;
+}
+
+.globe-stat-icon {
+    font-size: 2.5rem;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border-radius: 15px;
+    flex-shrink: 0;
+}
+
+.globe-stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.globe-stat-label {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Responsive adjustments for 3D section */
+@media (max-width: 991px) {
+    .three-container {
+        height: 400px;
+        margin-bottom: 3rem;
+    }
+    
+    .globe-section {
+        padding: 4rem 0;
+    }
+}
+
+@media (max-width: 767px) {
+    .three-container {
+        height: 300px;
+    }
+    
+    .globe-stat-item {
+        padding: 1rem;
+    }
+    
+    .globe-stat-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+    
+    .globe-stat-value {
+        font-size: 1.5rem;
+    }
+}

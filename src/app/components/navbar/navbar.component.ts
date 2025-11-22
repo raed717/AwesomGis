@@ -8,4 +8,8 @@ import { Component } from '@angular/core';
 })
 export class NavbarComponent {
 
+    scrollToAuthor(): void {
+      document.getElementById('author')?.scrollIntoView({ behavior: 'smooth' });
+    }
+
 }

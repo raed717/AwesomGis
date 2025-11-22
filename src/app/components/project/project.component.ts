@@ -380,6 +380,102 @@ export class ProjectComponent implements OnInit, OnDestroy {
     this.showShapefilesModal = false;
   }
 
+  // In project.component.ts
+
+  // Add this method to handle importing the static Impruneta shapefile
+  openImprunetaShapes(): void {
+    // Show loading alert
+    Swal.fire({
+      title: 'Loading Impruneta Shapes',
+      text: 'Please wait while we import the shapefile...',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    // Fetch the static zip file from the public folder
+    fetch('/impruneta.zip')
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            'Failed to load impruneta.zip. Make sure the file exists in the public folder.'
+          );
+        }
+        return response.blob();
+      })
+      .then((blob) => {
+        // Convert blob to File object
+        const file = new File([blob], 'impruneta.zip', {
+          type: 'application/zip',
+        });
+
+        // Use the projectsService to import the shapefile
+        return this.projectsService.importShapefile(file, this.map);
+      })
+      .then((result) => {
+        Swal.close();
+
+        if (result.success) {
+          // Apply custom colors to all imported shapes
+          this.applyColorsToAllShapes();
+
+          this.updateShapeCount();
+
+          // Refresh attributes if table is open
+          if (this.showAttributesTable) {
+            this.loadShapeAttributes();
+          }
+
+          // Fit map bounds to show all imported shapes
+          this.fitMapToShapes(18);
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Impruneta Shapes Imported!',
+            text: result.message,
+            confirmButtonColor: '#4CAF50',
+            timer: 3000,
+          });
+        } else {
+          Swal.fire({
+            icon: 'error',
+            title: 'Import Failed',
+            text: result.message,
+            confirmButtonColor: '#4CAF50',
+          });
+        }
+      })
+      .catch((error) => {
+        Swal.close();
+        console.error('Error loading Impruneta shapes:', error);
+      });
+  }
+
+  // Add this helper method to fit the map view to show all shapes
+  private fitMapToShapes(zoom?: number): void {
+    const layers: L.Layer[] = [];
+    
+    this.map.eachLayer((layer) => {
+      // Skip tile layers
+      if (!(layer instanceof L.TileLayer)) {
+        layers.push(layer);
+      }
+    });
+    
+    if (layers.length > 0) {
+      const group = L.featureGroup(layers);
+      const bounds = group.getBounds();
+      
+      if (bounds.isValid()) {
+        this.map.fitBounds(bounds, {
+          padding: [50, 50],
+          maxZoom: zoom !== undefined ? zoom : 16
+        });
+      }
+    }
+  }
+
   onImportComplete(result: {
     success: boolean;
     message: string;
