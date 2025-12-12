@@ -28,18 +28,24 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Project information
   projectInfo = {
-    title: 'Mapping and Analysis of Critical Infrastructure and Fiber-Optic Needs in a Web GIS Environment for the Impruneta Area (Italy)',
-    degree: 'Professional Master\'s Degree in Geomatics for Sustainable Development and the Environment',
+    title:
+      'Mapping and Analysis of Critical Infrastructure and Fiber-Optic Needs in a Web GIS Environment for the Impruneta Area (Italy)',
+    degree:
+      "Professional Master's Degree in Geomatics for Sustainable Development and the Environment",
     year: '2024–2025',
-    collaborators: ['WOLO', 'Faculty of Letters, Arts, and Humanities of Manouba'],
-    description: 'This project aims to design and implement a WebGIS solution that centralizes, visualizes, and analyzes data related to critical infrastructure and fiber-optic requirements. The platform is intended to enhance understanding of the existing network, optimize the planning of future extensions, and support strategic decision-making for sustainable urban development.'
+    collaborators: [
+      'WOLO',
+      'Faculty of Letters, Arts, and Humanities of Manouba',
+    ],
+    description:
+      'This project aims to design and implement a WebGIS solution that centralizes, visualizes, and analyzes data related to critical infrastructure and fiber-optic requirements. The platform is intended to enhance understanding of the existing network, optimize the planning of future extensions, and support strategic decision-making for sustainable urban development.',
   };
 
   author = {
     name: 'Rania Hosni',
     title: 'Geomatics Technician',
     bio: 'A geomatics specialist passionate about spatial technologies and geographic data analysis, with solid experience in designing FTTH plans, digital mapping, and GIS project management. With strong skills in GIS tools such as QGIS, ArcGIS Pro, and AutoCAD, I provide effective solutions to challenges related to planning, environment, and connectivity. My professional background has allowed me to collaborate with engineers and field teams, manage technical projects, and maintain a high level of accuracy in data processing. I am also comfortable working in multilingual environments (Arabic, French, English) and have strong communication skills, which support teamwork and ensure client satisfaction.',
-    image: 'https://media.licdn.com/dms/image/v2/D4E03AQHVZkBqYGGyWg/profile-displayphoto-shrink_800_800/B4EZYcwPhhHkAg-/0/1744239132942?e=1765411200&v=beta&t=_qbH6wQGmNnFvxpwanZv-Bf01XX0scUpq53P4XHy_p4',
+    image: 'rania.jpg',
     email: 'Hosnirania18@gmail.com',
     linkedin: 'www.linkedin.com/in/hosni-rania-9886a0255/',
   };
@@ -48,27 +54,32 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
     {
       icon: '🗺️',
       title: 'Interactive 2D Mapping',
-      description: 'Visualize critical infrastructure and fiber-optic networks on high-performance 2D maps with smooth pan and zoom capabilities.',
+      description:
+        'Visualize critical infrastructure and fiber-optic networks on high-performance 2D maps with smooth pan and zoom capabilities.',
     },
     {
       icon: '📁',
       title: 'Shapefile Upload',
-      description: 'Easily upload and process ESRI shapefiles (.shp, .dbf, .shx) with automatic projection handling for infrastructure data.',
+      description:
+        'Easily upload and process ESRI shapefiles (.shp, .dbf, .shx) with automatic projection handling for infrastructure data.',
     },
     {
       icon: '🏗️',
       title: 'Infrastructure Analysis',
-      description: 'Analyze critical infrastructure networks and identify fiber-optic requirements for optimal urban planning.',
+      description:
+        'Analyze critical infrastructure networks and identify fiber-optic requirements for optimal urban planning.',
     },
     {
       icon: '📊',
       title: 'Attribute Analysis',
-      description: 'Query and analyze attribute data from your shapefiles with advanced filtering options for infrastructure management.',
+      description:
+        'Query and analyze attribute data from your shapefiles with advanced filtering options for infrastructure management.',
     },
     {
       icon: '💾',
       title: 'Data Export',
-      description: 'Export your styled maps and analysis results in various formats including GeoJSON and KML.',
+      description:
+        'Export your styled maps and analysis results in various formats including GeoJSON and KML.',
     },
   ];
 
@@ -86,6 +97,26 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit(): void {}
 
   ngAfterViewInit(): void {
+    // Wait for the DOM to actually paint before initializing Three
+    requestAnimationFrame(() => {
+      this.ensureContainerReady();
+    });
+  }
+
+  private ensureContainerReady() {
+    const container = this.threeContainer?.nativeElement;
+
+    if (!container) return;
+
+    const { clientWidth, clientHeight } = container;
+
+    // If container hasn't been laid out yet, retry
+    if (clientWidth === 0 || clientHeight === 0) {
+      setTimeout(() => this.ensureContainerReady(), 30);
+      return;
+    }
+
+    // Now it's safe to initialize ThreeJS
     this.initThreeJS();
     this.animate();
   }
@@ -117,9 +148,9 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.camera.position.z = 5;
 
     // Renderer
-    this.renderer = new THREE.WebGLRenderer({ 
-      antialias: true, 
-      alpha: true 
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
     });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
@@ -136,7 +167,7 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
       color: 0x6366f1,
       wireframe: true,
       transparent: true,
-      opacity: 0.3
+      opacity: 0.3,
     });
     this.globe = new THREE.Mesh(geometry, material);
     this.scene.add(this.globe);
@@ -185,22 +216,31 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
       this.pointColors[i * 3] = defaultColor.r;
       this.pointColors[i * 3 + 1] = defaultColor.g;
       this.pointColors[i * 3 + 2] = defaultColor.b;
-      
+
       this.originalColors[i * 3] = defaultColor.r;
       this.originalColors[i * 3 + 1] = defaultColor.g;
       this.originalColors[i * 3 + 2] = defaultColor.b;
     }
 
-    pointsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    pointsGeometry.setAttribute('size', new THREE.BufferAttribute(this.pointSizes, 1));
-    pointsGeometry.setAttribute('color', new THREE.BufferAttribute(this.pointColors, 3));
+    pointsGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(positions, 3)
+    );
+    pointsGeometry.setAttribute(
+      'size',
+      new THREE.BufferAttribute(this.pointSizes, 1)
+    );
+    pointsGeometry.setAttribute(
+      'color',
+      new THREE.BufferAttribute(this.pointColors, 3)
+    );
 
     const pointsMaterial = new THREE.PointsMaterial({
       size: 0.05,
       transparent: true,
       opacity: 0.8,
       vertexColors: true,
-      sizeAttenuation: true
+      sizeAttenuation: true,
     });
 
     this.points = new THREE.Points(pointsGeometry, pointsMaterial);
@@ -259,12 +299,15 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
     this.pointColors[index * 3 + 1] = hoverColor.g;
     this.pointColors[index * 3 + 2] = hoverColor.b;
 
-
     // Mark attributes as needing update
     const geometry = this.points.geometry;
-    const sizeAttribute = geometry.getAttribute('size') as THREE.BufferAttribute;
-    const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute;
-    
+    const sizeAttribute = geometry.getAttribute(
+      'size'
+    ) as THREE.BufferAttribute;
+    const colorAttribute = geometry.getAttribute(
+      'color'
+    ) as THREE.BufferAttribute;
+
     sizeAttribute.needsUpdate = true;
     colorAttribute.needsUpdate = true;
   }
@@ -280,9 +323,13 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewInit {
 
     // Mark attributes as needing update
     const geometry = this.points.geometry;
-    const sizeAttribute = geometry.getAttribute('size') as THREE.BufferAttribute;
-    const colorAttribute = geometry.getAttribute('color') as THREE.BufferAttribute;
-    
+    const sizeAttribute = geometry.getAttribute(
+      'size'
+    ) as THREE.BufferAttribute;
+    const colorAttribute = geometry.getAttribute(
+      'color'
+    ) as THREE.BufferAttribute;
+
     sizeAttribute.needsUpdate = true;
     colorAttribute.needsUpdate = true;
   }
